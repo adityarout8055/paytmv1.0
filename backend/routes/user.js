@@ -2,20 +2,22 @@ const express = require("express");
 const zod = require("zod");
 const {User,Account} = require("../db");
 const JWT_SECRET = require("../config");
-const authMiddleware = require("../middleware");
+const {authMiddleware} = require("../middleware");
+const jwt = require("jsonwebtoken");
+
 
 const userRouter = express.Router();
 
 const signUpSchema = zod.object({
   username: zod.string().email(),
-  firstname: zod.string(),
-  lastname: zod.string(),
+  firstName: zod.string(),
+  lastName: zod.string(),
   password: zod.string(),
 });
 
 userRouter.post("/signup", async (req, res) => {  
     const body = req.body;
-  const {success} = signUpSchema.parse(body);
+  const {success} = signUpSchema.safeParse(body);
   if(!success){
     return res.status(411).json({ message: "Invalid request / email already exists" });
   }
@@ -29,8 +31,8 @@ const user = User.findOne({
 
   const newUser = await User.create({
     username: body.username,
-    firstname: body.firstname,
-    lastname: body.lastname,
+    firstName: body.firstName,
+    lastName: body.firstName,
     password: body.password,
   });
   const userId = newUser._id;
@@ -56,7 +58,7 @@ const signInSchema = zod.object({
 
 userRouter.post("/signin",async (req,res)=>{
   const user = req.body;
-  const {success} = signInSchema.parse(user);
+  const {success} = signInSchema.safeParse(user);
   if(!success){
     return res.status(400).json({
       message:"invalid username or password"
@@ -86,17 +88,16 @@ const updateSchema = zod.object({
 });
 
 
-
-userRouter.put("/user",authMiddleware,async (req,res)=>{
+userRouter.put("/",authMiddleware,async (req,res)=>{
 const body = req.body;
-const bodyParse = updateSchema.parse(body);
-if(!bodyParse){
+const {success} = updateSchema.safeParse(body);
+if(!success){
   return res.status(400).json({
-    message:"invalid string"
+     message: "Error while updating information"
   })
 }
-const updateUser = await User.updateOne(
-{_id:body._id},body
+ await User.updateOne(
+{_id:req.userId},body
 );
 return res.status(200).json({
   message:"updated successfully",
