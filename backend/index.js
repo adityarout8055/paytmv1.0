@@ -5,10 +5,18 @@ const port = 3000;
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:5173', // Allow your frontend URL
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
+
 app.use(express.json());
 
+app.use("/api/v1", mainRouter);
 
-app.use("/api/v1",mainRouter);
-
-app.listen(3000);
+// Add proper server startup logging
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
+});
